@@ -11,7 +11,8 @@ Requirements
 Operating systems
 -----------------
 This role will work on the following Operating systems.
-- CentOS-7
+
+- CentOS 7
 
 Author
 ~~~~~~
