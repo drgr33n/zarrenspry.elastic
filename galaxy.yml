@@ -1,0 +1,22 @@
+---
+namespace: zarrenspry
+name: elastic
+version: 0.0.1
+readme: README.rst
+authors:
+  - Zarren Spry <zarrenspry@gmail.com>
+description: A collection of roles and plugins to install a full ELK stack.
+dependencies: {}
+license_file: LICENSE
+tags:
+  - development
+  - elastic
+  - kibana
+  - logstash
+  - monitoring
+  - zarrenspry
+repostory:
+documentation:
+homepage:
+issues:
+build_ignore: []
