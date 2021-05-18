@@ -18,12 +18,18 @@ This role will work on the following Operating systems.
 
 Variables
 ~~~~~~~~~
-.. list-table:: Configurable Variables
-   :widths: 25 25 50
+
+.. list-table:: Config Vars
+   :widths: 25 25 25 50
    :header-rows: 1
    * - Key
+     - Type
      - Default value
      - Description
+   * - Dummy var
+     - BOOL
+     - False
+     - Placeholder
 
 Author
 ~~~~~~
