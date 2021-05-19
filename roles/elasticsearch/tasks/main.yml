@@ -15,7 +15,7 @@
   ansible.builtin.package:
     name: elasticsearch
     state: present
-  when: not _uninstall.changed
+  when: _uninstall is not defined
 
 - name: Configure ElasticSearch
   block:
@@ -29,7 +29,7 @@
       loop:
         - /etc/elasticsearch/elasticsearch.yml
         - /etc/elasticsearch/jvm.options.d/heap.options
-  notify: restart elasticsearch
+      notify: restart elasticsearch
 
 - name: Start ElasticSearch Service.
   ansible.builtin.service:

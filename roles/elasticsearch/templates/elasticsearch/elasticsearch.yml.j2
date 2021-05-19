@@ -94,6 +94,6 @@ http.port: {{ elasticsearch_http_port }}
 xpack.security.enabled: true
 xpack.security.transport.ssl.enabled: true
 xpack.security.transport.ssl.verification_mode: certificate
-xpack.security.transport.ssl.keystore.path: "{{ elasticsearch_conf_dir }}/elasticsearch.keystore"
-xpack.security.transport.ssl.truststore.path: "tls/elastic-keystore-development.p12"
+xpack.security.transport.ssl.keystore.path: "{{ elasticsearch_conf_dir }}/tls/elastic-stack-ca.p12"
+xpack.security.transport.ssl.truststore.path: "{{ elasticsearch_conf_dir }}/tls/elastic-stack-ca.p12"
 {% endif %}
