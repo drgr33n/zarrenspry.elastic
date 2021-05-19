@@ -1,7 +1,7 @@
 ---
 elasticsearch_xpack_enabled: true
 elasticsearch_api_basic_auth_password: changeme
-elasticsearch_tls_keystore_password: changeme
+elasticsearch_tls_ca_password: changeme
 elasticsearch_system_user_passwords:
   apm_system: changeme
   kibana_system: changeme

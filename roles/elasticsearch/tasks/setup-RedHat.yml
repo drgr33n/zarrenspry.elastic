@@ -9,3 +9,10 @@
     src: RedHat/elasticsearch.repo.j2
     dest: /etc/yum.repos.d/elasticsearch.repo
     mode: 0644
+
+- name: Allow elasticsearch traffic through the firewall
+  ansible.posix.firewalld:
+    immediate: true
+    permanent: true
+    service: elasticsearch
+    state: enabled
