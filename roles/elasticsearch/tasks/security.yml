@@ -1,0 +1,138 @@
+---
+- name: Create the elasticsearch keystore
+  block:
+    - name: Check if keystore already exists
+      ansible.builtin.stat:
+        path: "{{ elasticsearch_conf_dir }}/elasticsearch.keystore"
+      register: _es_ks_exists
+
+    - name: create the keystore if it doesn't exist yet
+      become: true
+      ansible.builtin.command: ./bin/elasticsearch-keystore create
+      args:
+        creates: "{{ elasticsearch_conf_dir }}/elasticsearch.keystore"
+        chdir: "{{ elasticsearch_home_dir }}"
+      environment:
+        ES_PATH_CONF: "{{ elasticsearch_conf_dir }}"
+      when: not _es_ks_exists.stat.exists
+
+    - name: Check if bootstrap password is set
+      become: true
+      ansible.builtin.command: ./bin/elasticsearch-keystore list
+      args:
+        chdir: "{{ elasticsearch_home_dir }}"
+      register: list_keystore
+      changed_when: false
+      environment:
+        ES_PATH_CONF: "{{ elasticsearch_conf_dir }}"
+      check_mode: false
+
+    - name: Create Bootstrap password for elastic user
+      become: true
+      shell: echo {{ elasticsearch_api_basic_auth_password | quote }} | {{ elasticsearch_home_dir }}/bin/elasticsearch-keystore add -x 'bootstrap.password'
+      when:
+        - "'bootstrap.password' not in list_keystore.stdout_lines"
+      environment:
+        ES_PATH_CONF: "{{ elasticsearch_conf_dir }}"
+      no_log: true
+
+    - name: Merge keystore entries
+      set_fact:
+        elasticsearch_keystore_entries: "{{ elasticsearch_keystore_additional_entries + elasticsearch_keystore_xpack_entries }}"
+
+    - name: Remove keystore entries
+      become: true
+      command: ./bin/elasticsearch-keystore remove '{{ item.key }}'
+      args:
+        chdir: "{{ elasticsearch_home_dir }}"
+      loop: "{{ elasticsearch_keystore_entries }}"
+      when:
+        - elasticsearch_keystore_entries is defined and elasticsearch_keystore_entries | length > 0
+        - item.state is defined and item.state == 'absent'
+        - item.key in list_keystore.stdout_lines
+        - ('bootstrap.password' not in item.key)
+      no_log: true
+
+    - name: Reload keystore entries
+      become: true
+      command: ./bin/elasticsearch-keystore list
+      args:
+        chdir: "{{ elasticsearch_home_dir }}"
+      register: list_keystore
+      changed_when: false
+      environment:
+        ES_PATH_CONF: "{{ elasticsearch_conf_dir }}"
+      check_mode: no
+
+    - name: Add keystore entries
+      become: true
+      shell: echo {{ item.value | quote }} | {{ elasticsearch_home_dir }}/bin/elasticsearch-keystore add -x -f {{ item.key }}
+      with_items: "{{ elasticsearch_keystore_entries }}"
+      when:
+        - elasticsearch_keystore_entries is defined and elasticsearch_keystore_entries | length > 0
+        - item.state is undefined or item.state == 'present'
+        - item.force|default(False) or ( not item.force|default(False) and item.key not in list_keystore.stdout_lines )
+        - ('bootstrap.password' not in item.key)
+      no_log: true
+
+- name: Create TLS directory
+  ansible.builtin.file:
+    path: "{{ elasticsearch_conf_dir }}/tls"
+    state: directory
+    owner: root
+    group: elasticsearch
+
+- name: Create Certificate Authority
+  block:
+    - name: Check if TLS keystore already exists
+      ansible.builtin.stat:
+        path: "{{ elasticsearch_conf_dir }}/tls/elastic-stack-ca.p12"
+      register: _es_tls_exists
+
+    - name: create the CA if it doesn't exist yet
+      become: true
+      ansible.builtin.command: ./bin/elasticsearch-certutil ca --out {{ elasticsearch_conf_dir }}/tls/elastic-stack-ca.p12 --pass {{ elasticsearch_tls_ca_password }}
+      args:
+        creates: "{{ elasticsearch_conf_dir }}/tls/elastic-stack-ca.p12"
+        chdir: "{{ elasticsearch_home_dir }}"
+      environment:
+        ES_PATH_CONF: "{{ elasticsearch_conf_dir }}"
+      when: not _es_tls_exists.stat.exists
+      register: _ca_created
+      notify: restart elasticsearch
+
+    - name: Change ownership to the ElasticSearch system user
+      ansible.builtin.file:
+        path: "{{ elasticsearch_conf_dir }}/tls/elastic-stack-ca.p12"
+        owner: elasticsearch
+        group: elasticsearch
+        mode: 0600
+      when: _ca_created.changed
+
+- name: Flush handlers to ensure elasticserch is restarted upon change
+  meta: flush_handlers
+
+- name: Update reserved user credentials
+  ansible.builtin.uri:
+    url_username: elastic
+    url_password: "{{ elasticsearch_api_basic_auth_password }}"
+    method: POST
+    body_format: json
+    url: "http://{{ elasticsearch_network_host }}:9200/_security/user/{{ item.key }}/_password"
+    body: |
+      {
+        'password': '{{ item.value }}'
+      }
+  loop: "{{ elasticsearch_system_user_passwords | dict2items }}"
+  no_log: true
+
+- name: Add/Update users
+  ansible.builtin.uri:
+    url_username: elastic
+    url_password: "{{ elasticsearch_api_basic_auth_password }}"
+    method: POST
+    body_format: json
+    url: "http://{{ elasticsearch_network_host }}:9200/_security/user/{{ item.key }}/"
+    body: "{{ item.value | to_json }}"
+  loop: "{{ elasticsearch_users | dict2items }}"
+  no_log: true

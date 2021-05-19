@@ -1,0 +1,11 @@
+---
+- name: Add Elasticsearch GPG key.
+  ansible.builtin.rpm_key:
+    key: https://artifacts.elastic.co/GPG-KEY-elasticsearch
+    state: present
+
+- name: Add Elasticsearch repository.
+  ansible.builtin.template:
+    src: RedHat/elasticsearch.repo.j2
+    dest: /etc/yum.repos.d/elasticsearch.repo
+    mode: 0644
