@@ -1,0 +1,48 @@
+---
+- include_tasks: setup-RedHat.yml
+  when: ansible_os_family == 'RedHat'
+
+- name: Uninstall ElasticSearch
+  ansible.builtin.package:
+    name: elasticsearch
+    state: absent
+  register: _uninstall
+  tags:
+    - never
+    - uninstall
+
+- name: Install ElasticSearch
+  ansible.builtin.package:
+    name: elasticsearch
+    state: present
+  when: _uninstall is not defined
+
+- name: Configure ElasticSearch
+  block:
+    - name: Copy configuration templates
+      ansible.builtin.template:
+        src: "elasticsearch/{{ item | basename }}.j2"
+        dest: "{{ item }}"
+        owner: root
+        group: elasticsearch
+        mode: 0660
+      loop:
+        - /etc/elasticsearch/elasticsearch.yml
+        - /etc/elasticsearch/jvm.options.d/heap.options
+      notify: restart elasticsearch
+
+- name: Start ElasticSearch Service.
+  ansible.builtin.service:
+    name: elasticsearch
+    state: started
+    enabled: "{{ elasticsearch_service_enabled }}"
+
+- name: Make sure Elasticsearch is running before proceeding.
+  ansible.builtin.wait_for:
+    host: "{{ elasticsearch_network_host }}"
+    port: "{{ elasticsearch_http_port }}"
+    delay: 3
+    timeout: 300
+
+- include_tasks: security.yml
+  when: elasticsearch_xpack_enabled

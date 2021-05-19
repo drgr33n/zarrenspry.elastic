@@ -1,0 +1,27 @@
+---
+elasticsearch_xpack_enabled: true
+elasticsearch_api_basic_auth_password: changeme
+elasticsearch_tls_keystore_password: changeme
+elasticsearch_system_user_passwords:
+  apm_system: changeme
+  kibana_system: changeme
+  logstash_system: changeme
+  beats_system: changeme
+  remote_monitoring_user: changeme
+elasticsearch_keystore_xpack_entries:
+  - key: xpack.security.transport.ssl.keystore.secure_password
+    value: "{{ elasticsearch_tls_ca_password }}"
+    state: present
+  - key: xpack.security.transport.ssl.truststore.secure_password
+    value: "{{ elasticsearch_tls_ca_password }}"
+    state: present
+elasticsearch_keystore_additional_entries: []
+elasticsearch_users:
+  admin:
+    password: changeme
+    email: admin@acme.local
+    full_name: Systems Administrator
+    enabled: true
+    roles:
+      - superuser
+      - kibana_admin
