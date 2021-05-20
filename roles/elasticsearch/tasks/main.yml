@@ -31,6 +31,9 @@
         - /etc/elasticsearch/jvm.options.d/heap.options
       notify: restart elasticsearch
 
+- include_tasks: security.yml
+  when: elasticsearch_xpack_enabled
+
 - name: Start ElasticSearch Service.
   ansible.builtin.service:
     name: elasticsearch
@@ -44,5 +47,3 @@
     delay: 3
     timeout: 300
 
-- include_tasks: security.yml
-  when: elasticsearch_xpack_enabled

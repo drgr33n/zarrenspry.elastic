@@ -7,4 +7,5 @@ elasticsearch_jvm_heap_size_min: 1g
 elasticsearch_jvm_heap_size_max: 1g
 elasticsearch_home_dir: /usr/share/elasticsearch
 elasticsearch_conf_dir: /etc/elasticsearch
+elasticsearch_extra_options: []
 
